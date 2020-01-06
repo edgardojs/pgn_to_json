@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import json
+import chess.pgn
+import re
+import sys
+
+if len(sys.argv) > 1:
+  for pgn_file in sys.argv[1:]:
+    if pgn_file[-4:]==".pgn":
+      pgn_file = pgn_file[:-4]
+
+    try:
+      pgn = open(pgn_file + '.pgn')
+    except:
+      print("No file named " + pgn_file + ".pgn")
+      continue
+
+    print("Converting " + pgn_file + ".pgn to json...")
+
+    json_file = open(pgn_file + '.json', 'a')
+
+    node = chess.pgn.read_game(pgn)
+
+    while node != None:
+
+      data =  node.headers
+
+      data["moves"] = []
+
+      while node.variations:
+        next_node = node.variation(0)
+        data["moves"].append(re.sub("\{.*?\}", "", node.board().san(next_node.move)))
+        node = next_node
+      node = chess.pgn.read_game(pgn)
+      json.dump(data.__dict__, json_file,ensure_ascii=False)
+      json_file.write('\n')
+
+    json_file.close()
+else:
+  print("You need to pass in at least one pgn file.")
